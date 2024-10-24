@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票交易界面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+          p {
+            text-align: center;
+            color: #333;
+        }
+        .stock-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .stock-price {
+            font-size: 2em;
+        }
+        .change {
+            font-size: 1.2em;
+        }
+        .chart {
+            height: 400px; /* 图表高度 */
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            width: 100%; /* 设置宽度为100% */
+            box-sizing: border-box; /* 确保边框不影响宽度 */
+        }
+        .trade-section {
+            margin-top: 20px;
+        }
+        .trade-section input {
+            width: 150px; /* 设置输入框的具体宽度 */
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .trade-buttons {
+            display: flex;
+            justify-content: space-between;
+        }
+        .trade-buttons button {
+            flex: 1;
+            padding: 10px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50; /* 默认买入按钮颜色 */
+            color: white;
+            cursor: pointer;
+        }
+        .trade-buttons button:hover {
+            background-color: #45a049; /* 买入按钮悬停效果 */
+        }
+        .trade-buttons button#sell-button {
+            background-color: #f44336; /* 卖出按钮红色背景 */
+        }
+        .trade-buttons button#sell-button:hover {
+            background-color: #e53935; /* 更深的红色作为悬停效果 */
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.8em;
+            color: #777;
+        }
+
+        /* 媒体查询，适配小屏幕 */
+        @media (max-width: 600px) {
+            .stock-price {
+                font-size: 1.5em; /* 调整价格字体大小 */
+            }
+            .change {
+                font-size: 1em; /* 调整变化字体大小 */
+            }
+            .chart {
+                height: 300px; /* 调整图表高度 */
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>小船控股</h1>
+    <p>小船出海集团</p>
+    <div class="stock-info">
+        <div>
+            <h2>当前价格: <span class="stock-price" id="stock-price">¥3.69</span></h2>
+            <div class="change" id="stock-change">+0.13 (+3.65%)</div>
+        </div>
+    </div>
+    
+    <canvas id="stock-chart" class="chart"></canvas>
+    
+    <div class="trade-section">
+        <h3>买卖股票</h3>
+        <input type="number" id="trade-quantity" placeholder="输入数量" min="1">
+        <div class="trade-buttons">
+            <button id="buy-button">买入</button>
+            <button id="sell-button">卖出</button>
+        </div>
+    </div>
+    
+    <div class="footer">
+        © 2024 小船控股股票交易平台
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('stock-chart');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 800;
+    canvas.height = 400; // 图表高度
+
+    const stockData = [];
+    let currentPrice = 3.69;
+
+    function drawCandle(x, open, high, low, close) {
+        const candleWidth = 30; // 增加蜡烛宽度
+        const candleHeight = canvas.height - 50; // 留出底部空间
+        const scale = candleHeight / 5; // 根据价格范围调整比例
+        const scaledHigh = candleHeight - (high * scale);
+        const scaledLow = candleHeight - (low * scale);
+        const scaledOpen = candleHeight - (open * scale);
+        const scaledClose = candleHeight - (close * scale);
+        
+        // Draw high-low line
+        ctx.beginPath();
+        ctx.moveTo(x + candleWidth / 2, scaledHigh);
+        ctx.lineTo(x + candleWidth / 2, scaledLow);
+        ctx.strokeStyle = '#000';
+        ctx.stroke();
+        
+        // Draw open-close rectangle
+        ctx.fillStyle = close >= open ? 'green' : 'red';
+        ctx.fillRect(x, Math.min(scaledOpen, scaledClose), candleWidth, Math.abs(scaledClose - scaledOpen));
+    }
+
+    function updateStockPrice() {
+        const open = currentPrice;
+        const high = open + (Math.random() * 0.5); // 增加波动范围
+        const low = open - (Math.random() * 0.5);
+        const close = low + (Math.random() * (high - low));
+        
+        const previousPrice = currentPrice; // 保存前一个价格
+        currentPrice = close;
+
+        stockData.push({ open, high, low, close });
+
+        // Limit to the last 20 candles
+        if (stockData.length > 20) {
+            stockData.shift();
+        }
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw candles
+        stockData.forEach((data, index) => {
+            drawCandle(index * 40, data.open, data.high, data.low, data.close); // 增加蜡烛之间的间距
+        });
+
+        // Update price display
+        const stockPriceElement = document.getElementById('stock-price');
+        stockPriceElement.textContent = `¥${close.toFixed(2)}`;
+
+        // 根据价格变化调整颜色
+        if (close > previousPrice) {
+            stockPriceElement.style.color = 'green'; // 上涨
+        } else if (close < previousPrice) {
+            stockPriceElement.style.color = 'red'; // 下跌
+        } else {
+            stockPriceElement.style.color = 'black'; // 不变
+        }
+
+        const priceChange = close - open;
+        const changeText = priceChange > 0 ? `+${Math.abs(priceChange).toFixed(2)}` : `-${Math.abs(priceChange).toFixed(2)}`;
+        document.getElementById('stock-change').textContent = changeText;
+    }
+
+    setInterval(updateStockPrice, 2000); // 每2秒更新一次股价
+
+    document.getElementById('buy-button').addEventListener('click', function() {
+        const quantity = document.getElementById('trade-quantity').value;
+        if (quantity > 0) {
+            alert(`挂单买入 ${quantity} 股 小船控股`);
+        } else {
+            alert('请输入有效的数量。');
+        }
+    });
+
+    document.getElementById('sell-button').addEventListener('click', function() {
+        const quantity = document.getElementById('trade-quantity').value;
+        if (quantity > 0) {
+            alert(`挂单卖出 ${quantity} 股 小船控股`);
+        } else {
+            alert('请输入有效的数量。');
+        }
+    });
+</script>
+
+</body>
+</html>
